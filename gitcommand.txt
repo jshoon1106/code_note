@@ -1,0 +1,4 @@
+1. 파일 업로드 사이클
+git add -A (상태 저장)(캡슐 안에 담기)
+git status (상태 확인)
+git commit (업로드)
