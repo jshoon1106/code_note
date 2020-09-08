@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { background-color: silver; }
+        span { color: brown; }
+        div {
+            background-color: gray;
+            width: 400px;
+            height: 100px;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <p>0부터 100까지 숫자 중 랜덤한 숫자 알아맞추기</p>
+        <input type="text" id="num" onfocus="this.value=''">
+        <p>Enter 키를 사용하여 결과 확인하기</p>
+        <span id="notice"></span>
+    </div>
+    <div id="log">
+        
+    </div>
+    <script>
+        let numArea = document.getElementById("num");
+        document.onclick = () => { numArea.focus(); }
+        numArea.onkeydown = (event) => {
+            if (event.keyCode === 13){
+                play();
+                numArea.value='';
+            }
+        }
+        let notice = document.getElementById("notice");
+        let log = document.getElementById("log");
+        let rand = Math.round(Math.random()*(100));
+        function play() {
+            let num = document.getElementById("num").value*1;
+            if (rand > num) {
+                log.innerHTML += `${num}up<br>`;
+            } else if (rand < num) {
+                log.innerHTML += `${num}down<br>`;
+            } else if (rand === num) {
+                log.innerHTML += `<span>${num}correct</span><br>`;
+                wait(() => {
+                    notice.innerHTML = '';
+                    log.innerHTML = '';
+                }, 10, 0.1);
+                rand = Math.round(Math.random()*(100));
+                return;
+            }
+            function wait(_do, t=3, term=1) {
+                if (t/term < 1) term=1;
+                for (let i = 0; i < t; i += term) {
+                    setTimeout(() => {
+                        notice.innerHTML = `${t-i}초 후 화면이 리셋됩니다...<br>`;
+                    }, i*1000);
+                } setTimeout(_do, t*1000);
+            }
+        }
+    </script>
+</body>
+</html>

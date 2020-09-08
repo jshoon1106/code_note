@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { background-color: silver; }
+        span { color: brown; }
+        div {
+            display: block;
+            background-color: gray;
+            width: 400px;
+            height: 100px;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <p>0부터 100까지 숫자 중 랜덤한 숫자 알아맞추기</p>
+        <input type="text" id="num" onfocus="this.value=''">
+        <p>Enter 키를 사용하여 결과 확인하기</p>
+        <span id="notice"></span>
+    </div>
+    <div id="log">
+        
+    </div>
+    <script src="http://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script>
+        $(document).click(function() {
+            $("#num").focus();
+        })
+        $("#num").keydown(function(event) {
+            if (event.keyCode === 13){
+                play();
+                $("#num").val('');
+            }
+        })
+        let rand = Math.round(Math.random()*(100));
+        function play() {
+            let num = parseInt($("#num").val());
+            if (rand > num) {
+                $("#log").append(`${num}up<br>`);
+            } else if (rand < num) {
+                $("#log").append(`${num}down<br>`);
+            } else if (rand === num) {
+                $("#log").append(`<span>${num}correct</span><br>`);
+                wait(() => {
+                    $("#notice, #log").html('');
+                }, 5, 0.01);
+                rand = Math.round(Math.random()*(100));
+                return;
+            }
+            function wait(_do, t=5, term=1) {
+                if (t/term < 1) term=1;
+                for (let i = 0; i < t; i += term) {
+                    setTimeout(() => {
+                        $("#notice").html(
+                            `${(t-i).toFixed(demicalPlace(term))}초 후 작업이 실행됩니다...<br>`
+                        );
+                    }, i*1000);
+                } setTimeout(_do, t*1000);
+            }
+            // 입력된 숫자의 소수점 자릿수를 반환하는 함수
+            function demicalPlace(_num) {
+                let count = 0;
+                while (_num - Math.trunc(_num) !== 0) {
+                    count += 1;
+                    _num *= 10; 
+                } return count;
+            }
+            // (주어진 숫자)를 (소수 n번째 자리)까지 반올림한 수를 반환하는 함수
+            function round(_target, _place) {
+                return Math.round(_target*Math.pow(10, _place))/Math.pow(10, _place);
+            }
+        }
+    </script>
+</body>
+</html>

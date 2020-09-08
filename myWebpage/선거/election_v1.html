@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@800&display=swap" rel="stylesheet">
+    <title>준연동형 비례대표제 적용하기</title>
+    <style>
+        * {
+            font-family: 'Nanum Myeongjo', serif;
+            background-color:cornflowerblue;
+            border: none;
+            text-align: center;
+        }
+        header, .editor, .viewer, .inputBox, .note {
+            border: 2px solid skyblue;
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 5px auto;
+            padding: 7.5px;
+        }
+        .circle {
+            border: inherit;
+            width: 300px;
+            height: 300px;
+            border-radius: 150px;
+            margin: 0 auto;
+        } .empty-circle {
+            width: 60%;
+            height: 60%;
+            border: inherit;
+            border-radius: inherit;
+            position: relative;
+            top: 20%; left: 20%;
+        }
+        input[type=text] {
+            background-color: silver;
+            text-align: center;
+            width: 100px;
+            line-height: 20px;
+        }
+        input[type=button] {
+            border-radius: 10px;
+        }
+        @media (min-width:1200) {
+            
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>준연동형 비례대표제 적용하기</h2>
+        총 300석 (( 지역구 253석 + 비례대표 47석 ))
+    </header>
+    <section>
+        <div class="editor">
+            <input type="button" value="-정당 삭제" onclick="remove();">
+            <input type="button" value="+정당 추가" onclick="make();">
+            <input type="button" value="확인(Enter)" onclick="show();">
+        </div>
+        <div class="list"></div>
+        <div class="viewer">
+            <div class="circle">
+                <div class="empty-circle"></div>
+            </div>
+        </div>
+        <div class="note"></div>
+    </section>
+    <script src="http://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script>
+        $(document).keyup(function(event) {
+            if (event.keyCode === 13) show();
+        })
+        let n = 0;
+        let color = ['red', 'pink', 'blue', 'skyblue', 'orange', 'yellow', 'green', 'yellowgreen', ];
+        function make() {
+            if (n >= color.length) return;
+            let $inputBox = $('<div>').addClass('inputBox');
+            let party = {
+                color: $('<input type="button" value="'+(n+1)+'">').addClass('color').css('background-color', color[n]),
+                dis: $('<input type="text" placeholder="지역구(표)">').addClass('dis'),
+                rate: $('<input type="text" placeholder="득표율(%)">').addClass('rate')
+            }
+            $inputBox.append(party.color);
+            $inputBox.append(party.dis);
+            $inputBox.append(party.rate);
+            $('.list').append($inputBox);
+            n += 1;
+        };
+        function remove() {
+            if (n <= 0) return;
+            if ($('.inputBox').length > 0) {
+                $('.inputBox')[$('.inputBox').length-1].remove();
+            }
+            n -= 1;
+        }
+        function show() {
+            $('.note').empty();
+            let background = '';
+            let total = 0;
+
+            // ★★★ 지지율이 100% 이상인 경우에는 다시 입력하라고 경고를 보낸다
+            if ($('.rate').toArray().map(e =>
+                parseFloat($(e).val())
+            ).reduce((a, b) => a + b) > 100) {
+                alert("오류! 득표율 총합이 100 이하가 되어야 합니다");
+                return;
+            }
+            // 1. 지역구 253석 구하기
+            let dis = $('.dis').toArray().map(e => 
+                isNaN(parseInt($(e).val())) ? 0 : parseInt($(e).val())
+            );
+            // ★★★ 지역구의석이 253석보다 큰 경우에는 다시 입력하라고 하고 돌려보낸다
+            if (dis.reduce((a, b) => a + b) > 253) {
+                alert("오류! 지역구 의석 총합이 253 이하가 되어야 합니다");
+                return;
+            }
+            // 2. 비례 17석 + 연동비례 30석 구하기
+            // 조건: 정당득표율 3 미만 or
+            //       지역구 당선자수 5 미만 or
+            //       숫자가 아닌 게 입력됨 == 0
+            let pr_org = [], pr_cap = [];
+            $('.rate').each((i, e) => {
+                [pr_org[i], pr_cap[i]] = (
+                    parseInt($(e).val()) < 3 && dis[i] < 5 ||
+                    isNaN(parseFloat($(e).val()))
+                ) ? [0,0] : [
+                    Math.floor($(e).val()*0.17),
+                    $(e).val()*3 - dis[i] < 1 ? 0 : (
+                        Math.round(($(e).val()*3 - dis[i]) / 2)
+                    )
+                ]
+            })
+            // ★★★★★ 연동비례의석이 30석보다 큰 경우에는 30석 비율에 맞게 조정시킨다
+            if (pr_cap.reduce((a, b) => a + b) > 30) {
+                pr_cap = pr_cap.map(e => Math.round(e / pr_cap.reduce((a, b) => a + b) * 30))
+            }
+
+            function sortArr(arr) {
+                return arr.map((e, i) => 
+                    [e, dis[i] + pr_org[i] + pr_cap[i]]
+                ).sort((a, b) => b[1] - a[1]).map(e=>e[0])
+            }
+
+            // 3. 그래프 background 색칠하기, 통계 표시하기
+            for (let i = 0; i < $('.inputBox').length; i++) {
+                let sum = sortArr(dis)[i]+sortArr(pr_org)[i]+sortArr(pr_cap)[i];
+                total += sum;
+                background += `${sortArr(color)[i]} 0 ${total/300}turn, `;
+                $('.circle').css('background', `conic-gradient(${background}cornflowerblue 0)`);
+                $('.note').append(
+                    `<input type="button" value="${i+1}" style="background-color:${sortArr(color)[i]};">: 지역구 ${sortArr(dis)[i]}석 +  비례 (${sortArr(pr_cap)[i]} + ${sortArr(pr_org)[i]})석 // 총 ${sum}석 // ${(sum/3).toFixed(2)}%<br>`
+                );
+            }
+        }
+        // 1. 득표율 순서로 배열하기
+        // 
+    </script>
+</body>
+</html>
+<!-- 
+    1
+    conic-gradient 를 사용할 때는
+    background-color로 쓰면 안 되고
+    background로 써야 한다
+    
+    일반 배열.객체에서 .each()를 사용하려면
+    $.each(배열, 함수) 형태로만 사용해야 한다
+    
+    .each()는 jquery 메소드이지만 DOM객체에서도 사용이 가능하다
+    
+
+    2
+    javascript의 메소드와 jquery의 메소드는 이름이 같은 것이 있어도 사용법이 약간 다르다
+    예를 들어) .map(), .each() 등등은 콜백함수가 들어가는데 매개변수를 넣는 방식이 다르다
+    javascript: element, index 이고
+    jquery:     index, element 이다
+
+    근데 사용법만 다른 게 아니라 생성되는 최종 결과물도 다르다
+    jquery 객체 배열은 $('.class') 배열처럼 사용하고 있지만 실제로는 배열이 아니다
+    따라서 map, reduce 같은 메소드를 쓰려면 jquery 객체를 배열로 만들어줘야 한다
+    map이나 reduce 같은 함수는 순수 배열에서 내가 원하는 대로 작동하는 것 같다
+    그러려면 $('.class').toArray, Array.from($('.class')) 등을 사용해야 한다
+
+    
+    3
+    일반함수 안의 this는 일반적으로 window 객체를 가리킨다고 한다
+    자세하게는 생성자 함수, 객체의 메소드를 제외한 모든 함수 안의 this는 window 객체를 가리킨다
+    따라서 this를 내가 원하는 대로 설정하려면 추가적인 함수를 사용해야 한다
+    
+    화살표 함수 안의 this는 일반적으로 자신을 포함하는 외부 영역을 가리킨다
+    자세하게는 생성자 함수, 객체의 메소드, addEventListener 함수의 콜백함수를 제외한
+    모든 함수 안의 this는 자신을 포함하는 외부 영역을 가리킨다
+    
+    let dis = $('.dis').map(() =>
+        console.log($(this))
+    );
+    
+    let dis = $('.dis').map(() =>
+        console.log(this)
+    );
+    
+    저기서 this는 두 가지 경우 모두 window를 가리키면서 의도대로 안 된다
+    근데 저기서 화살표함수를 일반함수로 바꾸면 그때는 또 의도하는대로 작동이 잘 된다
+    뭔가 상황이 뒤바뀐 거 같다
+    화살표 함수를 사용해보고 싶은데 생각대로 잘 안 된다  
+    
+    왜 그런 건지 이유를 생각해 보니까
+    jquery객체는 말 그대로 객체이고, 따라서 map, each 등의 함수는 객체의 메소드이기 때문에
+    일반적인 일반함수의 예외 상황에 포함되어 this가 외부 영역으로 설정되는 것 같다
+    
+    따라서 내가 의도하는 대로 this를 외부 스코프로 지정하고 싶으면
+    객체.map(function() { return ... })
+    배열.map(() => ...)
+    이렇게 하면 의도대로 될 것 같다는 것이 내 생각이다
+
+    내 추측이 맞을 줄 알았는데
+    그냥 매개변수로 element를 받아서 쓰는 것이 더 편할것이다
+    this가 가리키는 것에 대해서는 나중에 공부를 더 해봐야겠다
+
+
+    4
+    map함수는 배열의 값을 이용해 계산하여 새로운 배열을 만들어주는 함수이다
+    이 말의 뜻은 원래 배열의 값을 새로운 값으로 세팅해 준다는 것이 아니라
+    "새로운 배열"을 만들어 준다는 것이다
+    따라서 원래 배열의 형태를 바꾸고 싶으면 기존 배열 변수로 받아먹어야 한다
+    배열.map(...) 이렇게만 쓰면 의미가 없고
+    배열 = 배열.map(...)
+    이렇게 기존 배열 변수로 받아야 한다
+
+
+    5
+    sort함수는 map함수와는 다르게 원래 배열을 정렬시킨다
+    원래 배열을 정렬시키면서도 정렬된 배열값을 반환하기 때문에 사용법이 다양하다
+    배열.sort(...)
+    배열2 = 배열1.sort()
+    두 가지 방식이 모두 사용이 가능하다
+    원래 배열의 순서를 바꾸고 싶지 않다면
+    map함수 등으로 간접적으로 접근해서 사용하는 것이 좋을 것 같다
+
+    for (let i = 0; i < $('.name').length; i++) {
+        partyList.push([
+        $($('.name')[i]).val(),
+        $($('.color')[i]).val(),
+        parseInt($($('.dis')[i]).val()),
+            parseFloat($($('.rate')[i]).val())
+            ]);
+    }
+    
+    
+    $('.circle').css('background', `conic-gradient(B 0 0.1turn, A 0)`);
+    $('.circle').css('background', `conic-gradient(C 0 0.1turn, B 0 0.2turn, A 0)`);
+    $('.circle').css('background', `conic-gradient(D 0 0.1turn, C 0 0.2turn, B 0 0.3turn, A 0)`);
+    $('.circle').css('background', `conic-gradient(E 0 0.1turn, D 0 0.2turn, C 0 0.3turn, B 0 0.4turn, A 0)`);
+
+    규칙..
+    A = 1
+    A = 1 B = 1+2
+    A = 1 B = 1+2 C = 1+2+3
+
+
+
+    // if (event.target.getAttribute('type') === 'text') {
+    //     let act = {38:-1, 40:1};
+    //     $.each(act, (i, x) => {
+    //         if (event.keyCode == i) {
+    //             let target = event.target;
+    //             let className = event.target.className;
+    //             $(`.${className}`).each((j, y) => {
+    //                 if (target === y) {
+    //                     $(`.${className}`)[(j+x)%$(`.${className}`).length].focus();
+    //                     return;
+    //                 }
+    //             });
+    //         }
+    //     })
+    // }
+-->

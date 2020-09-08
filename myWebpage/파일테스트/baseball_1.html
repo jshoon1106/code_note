@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        html {
+            background-color: gray;
+        } div {
+            padding: 10px;
+            margin: 10px;
+            text-align: center;
+            background-color: silver;
+        } #range {
+            width: 1em;
+            text-align: right;
+        } #playArea input[type=text] {
+            width: 50px;
+            height: 50px;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 2em;
+        } input[type=button] {
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <input type="text" id="range">자리 숫자로 플레이하기
+        <input type="button" value="확인" onclick="makePlayArea()">
+    </div>
+    <div id="playArea"></div>
+    <div id="resultArea"></div>
+    <script>
+        let result = document.getElementById("resultArea");
+        let comN = [];
+        let range;
+        function makePlayArea() {
+            // (1) 몇 자리 숫자로 할 것인지 정하기(9 초과는 오류 출력)
+            range = document.getElementById("range").value*1;
+            if (range > 9) { alert("오류"); return; }
+            let playArea = document.getElementById("playArea");
+            playArea.innerHTML = '';
+            result.innerHTML = '';
+            // (2) 입력한 자릿수만큼 숫자 입력칸 만들기
+            for (let i=0; i<range; i++) {
+                let myN = document.createElement("input");
+                myN.setAttribute("type", "text");
+                myN.setAttribute("class", "myN");
+                myN.onfocus = function() { this.value = ''; }
+                playArea.appendChild(myN);
+            }
+            // (3) 숫자 입력칸 옆에 버튼 만들기
+            let button = document.createElement("input");
+            button.setAttribute("type", "button");
+            button.setAttribute("value", "확인");
+            button.onclick = playGame;
+            playArea.appendChild(button);
+            // (4) 입력한 자릿수만큼 컴퓨터 숫자를 랜덤으로 정하기(중복 X)
+            for (let i=0; i<range; i++) {
+                let rand = Math.floor(Math.random()*9 + 1);
+                if (comN.every(n => n !== rand)) comN[i] = rand;
+                else i--;
+            }
+        }
+        function playGame() {
+            let myN = [];
+            let strike_c = 0, ball_c = 0;
+            
+            // (1) 컴퓨터 숫자와 내 숫자 비교하여 결과 계산하기
+            for (let i = 0; i < range; i++) {
+                myN[i] = document.getElementsByClassName("myN")[i].value*1;
+                for (let j = 0; j < range; j++) {
+                    if (myN[i] === comN[j]) {
+                        if (i === j) strike_c += 1;
+                        else ball_c += 1;
+                        break;
+                    }
+                }
+            }
+            // (2) 숫자를 출력하고 결과를 같은 줄에 출력하기
+            myN.forEach(e => result.innerHTML += e);
+            if (strike_c === range) {
+                result.innerHTML += ":: 축하합니다! ::<br>";
+            } else if (strike_c === 0 && ball_c == 0) {
+                result.innerHTML += ":: 아웃... ::<br>";
+            } else {
+                result.innerHTML += `:: ${strike_c}strike ${ball_c}ball ::<br>`;
+            }
+            // comN.forEach(e => result.innerHTML += `${e}<br>`);
+        }
+    </script>
+</body>
+</html>

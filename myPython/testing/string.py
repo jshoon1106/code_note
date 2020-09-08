@@ -1,0 +1,1 @@
+print("HELLOHELLO"[:-1])
