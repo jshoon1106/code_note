@@ -3,3 +3,8 @@ git add -A  (상태 저장)(캡슐 안에 담기)
 git status  (상태 확인)
 git commit  (업로드)(캡슐 묻기)
 git log     (commit했던 목록 확인)
+
+2. 기타
+(git log나 git status로 목록을 보면서
+엔터키 계속 누르다 (END) 표시가 뜰 때)
+: q키를 누르면 종료됨
